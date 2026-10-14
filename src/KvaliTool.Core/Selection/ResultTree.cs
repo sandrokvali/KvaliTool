@@ -761,7 +761,62 @@ public sealed class ResultTree
             categoryRow.IsSelectable = categoryRow.SelectableItems > 0;
         }
 
+        LinkKeepersInsideFolderRows(setsByKeeper);
         FlattenRows();
+    }
+
+    /// <summary>
+    /// A folder row (an old Downloads folder offered as a whole, a Recycle Bin folder entry) removes everything inside
+    /// it, so if a duplicate set's kept copy is inside that folder, the folder row counts as a row of the kept copy.
+    /// Without this, ticking the folder plus every listed copy would select every copy of the file.
+    /// </summary>
+    private void LinkKeepersInsideFolderRows(Dictionary<string, List<DuplicateSet>> setsByKeeper)
+    {
+        if (setsByKeeper.Count == 0)
+        {
+            return;
+        }
+
+        var folderRows = new Dictionary<string, List<ResultRow>>(StringComparer.OrdinalIgnoreCase);
+        foreach (var row in _categories.SelectMany(c => c.Children).SelectMany(g => g.Children))
+        {
+            if (row.Item is { Kind: ItemKind.Folder or ItemKind.RecycleBinEntry } item)
+            {
+                var key = Path.TrimEndingDirectorySeparator(item.Path);
+                if (!folderRows.TryGetValue(key, out var list))
+                {
+                    folderRows[key] = list = [];
+                }
+
+                list.Add(row);
+            }
+        }
+
+        if (folderRows.Count == 0)
+        {
+            return;
+        }
+
+        foreach (var (keeperPath, keptSets) in setsByKeeper)
+        {
+            for (var folder = Path.GetDirectoryName(keeperPath); !string.IsNullOrEmpty(folder); folder = Path.GetDirectoryName(folder))
+            {
+                if (!folderRows.TryGetValue(Path.TrimEndingDirectorySeparator(folder), out var rows))
+                {
+                    continue;
+                }
+
+                foreach (var row in rows)
+                {
+                    // Copy: KeeperOf may be the list shared through setsByKeeper.
+                    row.KeeperOf = [.. row.KeeperOf ?? [], .. keptSets];
+                    foreach (var kept in keptSets)
+                    {
+                        kept.KeeperRowCount++;
+                    }
+                }
+            }
+        }
     }
 
     private static SetKey? KeyOf(ScanItem item) =>

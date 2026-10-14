@@ -317,6 +317,51 @@ public sealed class ResultTreeSelectionTests
             Category(CategoryId.LargeFiles, Item(@"C:\u\original.bin", 2_000, group: "Big"))));
     }
 
+    private static ResultTree DuplicateTreeWithKeeperInsideOldDownloadsFolder() =>
+        // The kept copy sits inside an old Downloads folder that is offered as a whole (a Folder row).
+        ResultTree.Build(Report(
+            Category(CategoryId.DuplicateFiles,
+                Item(@"C:\u\Documents\copy1.bin", 2_000, group: "Set 1", groupId: "g1", keeper: @"C:\u\Downloads\Old\original.bin")),
+            Category(CategoryId.OldDownloads,
+                Item(@"C:\u\Downloads\Old", 9_000, group: "Downloads", kind: ItemKind.Folder))));
+
+    [TestMethod]
+    public void Folder_row_containing_the_keeper_counts_as_the_keeper_so_the_last_copy_is_refused()
+    {
+        var tree = DuplicateTreeWithKeeperInsideOldDownloadsFolder();
+        Assert.AreEqual(1, tree.SetChecked(Row(tree, @"C:\u\Downloads\Old"), true).Changed);
+
+        var outcome = tree.SetChecked(Row(tree, @"C:\u\Documents\copy1.bin"), true);
+
+        Assert.AreEqual(1, outcome.KeptForDuplicateSafety);
+        Assert.AreEqual(CheckState.Unchecked, Row(tree, @"C:\u\Documents\copy1.bin").State);
+    }
+
+    [TestMethod]
+    public void Folder_row_containing_the_keeper_is_refused_when_every_listed_copy_is_checked()
+    {
+        var tree = DuplicateTreeWithKeeperInsideOldDownloadsFolder();
+        Assert.AreEqual(1, tree.SetChecked(Row(tree, @"C:\u\Documents\copy1.bin"), true).Changed);
+
+        var outcome = tree.SetChecked(Row(tree, @"C:\u\Downloads\Old"), true);
+
+        Assert.AreEqual(1, outcome.KeptForDuplicateSafety);
+        Assert.AreEqual(CheckState.Unchecked, Row(tree, @"C:\u\Downloads\Old").State);
+    }
+
+    [TestMethod]
+    public void Select_all_never_selects_a_folder_row_and_every_copy_of_a_file_inside_it()
+    {
+        var tree = DuplicateTreeWithKeeperInsideOldDownloadsFolder();
+
+        var outcome = tree.SelectAll();
+
+        Assert.AreEqual(1, outcome.KeptForDuplicateSafety);
+        Assert.IsFalse(
+            Row(tree, @"C:\u\Downloads\Old").State == CheckState.Checked && Row(tree, @"C:\u\Documents\copy1.bin").State == CheckState.Checked,
+            "The folder holding the kept copy and the only other copy must not both be selected.");
+    }
+
     [TestMethod]
     public void Duplicate_set_with_an_unlisted_keeper_can_have_every_listed_copy_checked()
     {
