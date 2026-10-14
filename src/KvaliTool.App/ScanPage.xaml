@@ -1,0 +1,141 @@
+<Page
+    x:Class="KvaliTool.App.ScanPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:local="using:KvaliTool.App"
+    NavigationCacheMode="Required">
+
+    <Page.Resources>
+        <DataTemplate x:Key="CategoryTemplate" x:DataType="local:CategoryChoice">
+            <CheckBox
+                IsChecked="{x:Bind IsSelected, Mode=TwoWay}"
+                AutomationProperties.Name="{x:Bind DisplayName}"
+                AutomationProperties.HelpText="{x:Bind Description}"
+                MinWidth="0"
+                Margin="0,4,0,4">
+                <StackPanel Spacing="2">
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                        <TextBlock Text="{x:Bind DisplayName}" FontWeight="SemiBold" TextWrapping="Wrap" />
+                        <Border
+                            Visibility="{x:Bind local:Fmt.Vis(NeedsAdminBadge)}"
+                            BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+                            BorderThickness="1"
+                            CornerRadius="4"
+                            Padding="6,1,6,1"
+                            VerticalAlignment="Center">
+                            <StackPanel Orientation="Horizontal" Spacing="4">
+                                <FontIcon Glyph="&#xE72E;" FontSize="12" Foreground="{ThemeResource SystemFillColorCautionBrush}" />
+                                <TextBlock Text="Needs admin" FontSize="12" />
+                            </StackPanel>
+                        </Border>
+                    </StackPanel>
+                    <TextBlock
+                        Text="{x:Bind Description}"
+                        TextWrapping="Wrap"
+                        Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                </StackPanel>
+            </CheckBox>
+        </DataTemplate>
+    </Page.Resources>
+
+    <Grid Padding="24,16,24,16" RowSpacing="12">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+
+        <StackPanel Grid.Row="0" Spacing="4">
+            <TextBlock Text="Scan your PC" Style="{StaticResource TitleTextBlockStyle}" />
+            <TextBlock
+                Text="A scan only looks. It never changes, moves or deletes anything. Pick what to look for, then start."
+                TextWrapping="Wrap"
+                Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+            <TextBlock
+                x:Name="ElevationText"
+                TextWrapping="Wrap"
+                Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+        </StackPanel>
+
+        <!-- Controls and live progress stay above the (scrolling) category list. -->
+        <StackPanel Grid.Row="1" Spacing="10">
+            <StackPanel Orientation="Horizontal" Spacing="12">
+                <Button
+                    x:Name="StartButton"
+                    Content="Start scan"
+                    Style="{StaticResource AccentButtonStyle}"
+                    Click="OnStartClick"
+                    AutomationProperties.Name="Start scan" />
+                <Button
+                    x:Name="CancelButton"
+                    Content="Cancel"
+                    IsEnabled="False"
+                    Click="OnCancelClick"
+                    AutomationProperties.Name="Cancel scan" />
+            </StackPanel>
+
+            <InfoBar
+                x:Name="StatusBar"
+                IsOpen="False"
+                IsClosable="True"
+                Severity="Informational" />
+
+            <StackPanel x:Name="ProgressPanel" Spacing="4" Visibility="Collapsed">
+                <ProgressBar
+                    x:Name="ScanProgressBar"
+                    Minimum="0"
+                    Maximum="1"
+                    AutomationProperties.Name="Scan progress" />
+                <TextBlock x:Name="ProgressCategoriesText" />
+                <TextBlock x:Name="ProgressFilesText" />
+                <TextBlock x:Name="ProgressActiveText" TextWrapping="Wrap" />
+                <TextBlock
+                    x:Name="ProgressPathText"
+                    TextTrimming="CharacterEllipsis"
+                    TextWrapping="NoWrap"
+                    Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+            </StackPanel>
+        </StackPanel>
+
+        <ToggleSwitch
+            Grid.Row="2"
+            x:Name="DuplicatesSwitch"
+            Header="Find duplicates (slow)"
+            OnContent="On: also look for files with identical content"
+            OffContent="Off"
+            AutomationProperties.Name="Find duplicates (slow)"
+            AutomationProperties.HelpText="Reads every candidate file in full, so it can take many minutes. Off by default." />
+
+        <ScrollViewer Grid.Row="3" x:Name="CategoryScroll" VerticalScrollBarVisibility="Auto">
+            <StackPanel x:Name="CategoriesPanel" Spacing="8" Padding="0,0,16,0">
+                <TextBlock
+                    Text="SAFE"
+                    Style="{StaticResource SubtitleTextBlockStyle}"
+                    AutomationProperties.HeadingLevel="Level2" />
+                <TextBlock
+                    Text="Caches and leftovers Windows or the program rebuilds by itself. Ticked by default."
+                    TextWrapping="Wrap"
+                    Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                <ItemsControl
+                    x:Name="SafeList"
+                    ItemTemplate="{StaticResource CategoryTemplate}"
+                    AutomationProperties.Name="Safe categories" />
+
+                <TextBlock
+                    Text="REVIEW"
+                    Margin="0,12,0,0"
+                    Style="{StaticResource SubtitleTextBlockStyle}"
+                    AutomationProperties.HeadingLevel="Level2" />
+                <TextBlock
+                    Text="Needs your judgement before anything is removed. Never ticked by default."
+                    TextWrapping="Wrap"
+                    Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                <ItemsControl
+                    x:Name="ReviewList"
+                    ItemTemplate="{StaticResource CategoryTemplate}"
+                    AutomationProperties.Name="Review categories" />
+            </StackPanel>
+        </ScrollViewer>
+    </Grid>
+</Page>
