@@ -1,0 +1,6 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/KvaliTool.Cli/KvaliTool.Cli.csproj" />
+    <Project Path="src/KvaliTool.Core/KvaliTool.Core.csproj" />
+  </Folder>
+</Solution>
