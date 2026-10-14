@@ -68,7 +68,7 @@ Use the default output folders: MSBuild breaks on `-o <path>` when the path has 
 | Duplicate safety in the running app | ticking the last copy is refused with an explanation |
 | Pre-ticking in the running app | REVIEW categories and personal-folder items start unticked |
 
-## Light theme, contrast and scrolling (checked after the 0.2.0 release)
+## Light theme, contrast and scrolling (checked after the 0.2.0 release; the fixes shipped in 0.2.1)
 
 **Scrolling a 100,000-item report** (one group of 15,000 rows), light theme. A background sampler pinged the app's UI thread every 20 ms while I expanded and collapsed the 15,000-row group, scrolled with 1,000-tick mouse-wheel bursts, and used End, Home and 30x Page Down / Page Up:
 
@@ -129,4 +129,4 @@ This measures that the UI thread never stalls; it is not a frame-rate measuremen
 **The launcher**
 
 - [ ] `irm https://github.com/sandrokvali/KvaliTool/releases/latest/download/kvalitool.ps1 | iex` shows the menu; option 1 downloads, verifies and opens the window.
-- [ ] Run it again: "window app (verified)". Edit or add a file in `%LOCALAPPDATA%\KvaliTool\app\0.2.0\` and run it again: it must refuse.
+- [ ] Run it again: "window app (verified)". Edit or add a file in `%LOCALAPPDATA%\KvaliTool\app\<version>\` and run it again: it must refuse.
