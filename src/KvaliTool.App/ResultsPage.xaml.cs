@@ -216,7 +216,9 @@ public sealed partial class ResultsPage : Page
     {
         if (outcome is { KeptForDuplicateSafety: > 0 } kept)
         {
-            DuplicateBar.Message = $"{kept.KeptForDuplicateSafety:N0} items left unticked so one copy of every duplicate set is kept.";
+            DuplicateBar.Message = kept.KeptForDuplicateSafety == 1
+                ? "1 item was left unticked so one copy of every duplicate set is kept."
+                : $"{kept.KeptForDuplicateSafety:N0} items were left unticked so one copy of every duplicate set is kept.";
             DuplicateBar.IsOpen = true;
         }
         else
@@ -464,8 +466,8 @@ public sealed partial class ResultsPage : Page
         try
         {
             // Explorer with /select only highlights the file in its folder. The file itself is never opened.
-            var start = new ProcessStartInfo("explorer.exe");
-            start.ArgumentList.Add("/select," + path);
+            // Explorer wants /select,"<path>" with only the path quoted (Windows paths can't contain quotes).
+            var start = new ProcessStartInfo("explorer.exe", $"/select,\"{path}\"") { UseShellExecute = false };
             Process.Start(start)?.Dispose();
         }
         catch (Exception ex)

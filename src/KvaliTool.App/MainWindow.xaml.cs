@@ -20,6 +20,9 @@ public sealed partial class MainWindow : Window
         Title = "KvaliTool";
         SystemBackdrop = new MicaBackdrop();
 
+        // Without this the caption bar stays light in dark mode; follow the system light/dark setting.
+        AppWindow.TitleBar.PreferredTheme = TitleBarTheme.UseDefaultAppMode;
+
         var hwnd = WindowNative.GetWindowHandle(this);
         MinimumWindowSize.Apply(hwnd, MinWidthDip, MinHeightDip);
         var scale = MinimumWindowSize.ScaleFor(hwnd);

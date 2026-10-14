@@ -45,6 +45,9 @@ public sealed class ScanSettings
     public List<string> DuplicateIgnoredFolderNames { get; set; } =
         ["node_modules", ".git", ".svn", ".hg", ".vs", "__pycache__", ".venv", "venv", "site-packages"];
 
+    /// <summary>An independent deep copy (through the same JSON the settings file uses, so every property is copied).</summary>
+    public ScanSettings Clone() => Serialization.ScanReportJson.Clone(this);
+
     /// <summary>Rejects values that would make the cleaner reckless (e.g. a 0-hour temp age).</summary>
     public void Validate()
     {

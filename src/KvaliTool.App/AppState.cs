@@ -1,4 +1,3 @@
-using System.Text.Json;
 using KvaliTool.Core.Configuration;
 using KvaliTool.Core.Models;
 using KvaliTool.Core.Selection;
@@ -113,11 +112,6 @@ internal static class AppState
         SetResults(tree, report, fromSavedReport: true);
     }
 
-    /// <summary>
-    /// An independent copy of <paramref name="source"/>, so a scan or an edit never changes the loaded settings
-    /// by accident. Goes through JSON so a property added to ScanSettings later is copied too.
-    /// </summary>
-    public static ScanSettings CloneSettings(ScanSettings source) =>
-        JsonSerializer.Deserialize<ScanSettings>(JsonSerializer.Serialize(source))
-            ?? throw new InvalidOperationException("Could not copy the settings.");
+    /// <summary>An independent copy of <paramref name="source"/>, so a scan or an edit never changes the loaded settings by accident.</summary>
+    public static ScanSettings CloneSettings(ScanSettings source) => source.Clone();
 }
