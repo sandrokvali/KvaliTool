@@ -312,14 +312,15 @@
                     PlaceholderText="Name, path, reason or group"
                     TextChanged="OnSearchTextChanged"
                     AutomationProperties.Name="Search results" />
-                <ToggleButton
+                <!-- A plain button, not a ToggleButton: a checked ToggleButton is filled with the accent color, and a
+                     light accent leaves white text on it unreadable. The label says what the next click does. -->
+                <Button
                     x:Name="DetailsToggle"
                     Grid.Column="2"
                     VerticalAlignment="Bottom"
-                    Content="Details"
-                    IsChecked="True"
+                    Content="Hide details"
                     Click="OnDetailsToggleClick"
-                    AutomationProperties.Name="Show details pane" />
+                    AutomationProperties.Name="Hide details pane" />
             </Grid>
 
             <StackPanel Orientation="Horizontal" Spacing="8">

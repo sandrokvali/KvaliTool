@@ -64,14 +64,36 @@ Use the default output folders: MSBuild breaks on `-o <path>` when the path has 
 | `tools\Test-Phase1.ps1` | ALL CHECKS PASSED (34 checks) |
 | `tools\Test-Launcher.ps1` | ALL LAUNCHER CHECKS PASSED (30 checks) |
 | Code audit (command below) | only `AppDataFile.cs`: the atomic replace of KvaliTool's own settings/cache file, and removing its own temp file if that fails |
-| Running app, real scan | Scan page, live progress, Results page, expand, tri-state, details pane, image preview, Ctrl+F, filter, Tab order, Space, Shift+F10 menu, Always exclude (saved, then removed in Settings), Settings save |
+| Running app, real scan | Scan page, live progress, Results page, expand, tri-state, details pane, image preview, Ctrl+F, filter, Tab order, Space, Shift+F10 menu, Always exclude (saved, then removed in Settings), Settings save, light and dark theme |
 | Duplicate safety in the running app | ticking the last copy is refused with an explanation |
 | Pre-ticking in the running app | REVIEW categories and personal-folder items start unticked |
 
+## Light theme, contrast and scrolling (checked after the 0.2.0 release)
+
+**Scrolling a 100,000-item report** (one group of 15,000 rows), light theme. A background sampler pinged the app's UI thread every 20 ms while I expanded and collapsed the 15,000-row group, scrolled with 1,000-tick mouse-wheel bursts, and used End, Home and 30x Page Down / Page Up:
+
+| | Samples | Over 100 ms | Timeouts | Median | 99th percentile | Worst | Memory |
+|---|---|---|---|---|---|---|---|
+| Run 1 (expand, wheel, End/Home) | 2,392 | 0 | 0 | 0.3 ms | 8.5 ms | 63 ms | 391 MB |
+| Run 2 (collapse/expand, bursts, End/Home, 30 pages) | 1,595 | 0 | 0 | 0.3 ms | 8.0 ms | 31 ms | 405 MB |
+
+This measures that the UI thread never stalls; it is not a frame-rate measurement. The screenshots after each action showed correctly drawn rows (no blank gaps once it settled).
+
+**Contrast, light theme** (`--theme light`), from pixels of a screenshot (a conservative lower bound: the capture is downscaled JPEG, which lightens thin strokes):
+
+| Text | Measured | By theme value |
+|---|---|---|
+| Titles, sizes, dates, names, details values (primary) | 10.3 to 20:1 | about 16:1 |
+| Path / Reason columns, nav (secondary) | 4.5 to 6.4:1 | about 6.1:1 |
+| Smallest secondary text (12 px captions, details labels) | 3.95 to 4.0:1 | about 6.1:1, but treat as "probably passes, not proven" |
+
+**Found and fixed:** the checked "Details" ToggleButton was filled with the accent color and measured **2.1:1** (white text on a light-grey accent). It is now a plain button ("Hide details" / "Show details") and its accessible name matches what it does. The caption bar now follows the app's theme.
+
+**Known limitation:** controls that WinUI fills with the system accent color (checked checkboxes, the Start scan and Save buttons, switches) take their contrast from your Windows accent color. With a very light or grey accent (as on the PC I tested), a ticked box's white tick is only about 2:1 against its fill in light theme. The app doesn't override the accent color on purpose.
+
 ## Not verified or not done (honest gaps)
 
-- **Light theme and contrast:** the app follows the system theme and I ran it in dark; light mode was only opened, not inspected for 4.5:1 contrast.
-- **Smooth scrolling of a group with more than 10,000 rows:** a 100,000-item report opens and expands, but I have not yet measured scrolling. Treat "smooth" as unproven.
+- **Smooth scrolling** is verified only as "the UI thread never stalls"; not measured as frames per second.
 - **Text scaling at 200 %** and **Narrator** were not run.
 - **Narrow window:** at the 900 px minimum, the Size/Modified/Reason columns need horizontal scrolling (the Details pane can be hidden).
 - **Broken-settings flow in the window** (`settings.json` unreadable disables scanning and saving) was not exercised there; the CLI behaviour from Phase 1 still applies.

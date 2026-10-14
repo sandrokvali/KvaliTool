@@ -198,11 +198,15 @@ public sealed partial class ResultsPage : Page
     private void OnListScrollSizeChanged(object sender, SizeChangedEventArgs e) =>
         ListContent.Width = Math.Max(ListContent.MinWidth, e.NewSize.Width);
 
+    private bool _detailsVisible = true;
+
     private void OnDetailsToggleClick(object sender, RoutedEventArgs e)
     {
-        var show = DetailsToggle.IsChecked == true;
-        DetailsPane.Visibility = show ? Visibility.Visible : Visibility.Collapsed;
-        DetailsColumn.Width = new GridLength(show ? 300 : 0);
+        _detailsVisible = !_detailsVisible;
+        DetailsPane.Visibility = _detailsVisible ? Visibility.Visible : Visibility.Collapsed;
+        DetailsColumn.Width = new GridLength(_detailsVisible ? 300 : 0);
+        DetailsToggle.Content = _detailsVisible ? "Hide details" : "Show details";
+        AutomationProperties.SetName(DetailsToggle, _detailsVisible ? "Hide details pane" : "Show details pane");
     }
 
     private void OnSelectSafeClick(object sender, RoutedEventArgs e) => ReportOutcome(_tree?.SelectSafe());
