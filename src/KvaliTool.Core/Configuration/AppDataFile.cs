@@ -1,3 +1,5 @@
+using System.Security.Cryptography;
+
 namespace KvaliTool.Core.Configuration;
 
 /// <summary>
@@ -19,5 +21,73 @@ public static class AppDataFile
     /// </list>
     /// Creates the parent folder if needed.
     /// </summary>
-    public static void WriteAtomic(string path, ReadOnlySpan<byte> contents) => throw new NotImplementedException();
+    public static void WriteAtomic(string path, ReadOnlySpan<byte> contents)
+    {
+        var target = Path.GetFullPath(path);
+        var directory = Path.GetDirectoryName(target)
+            ?? throw new IOException($"'{path}' has no containing folder.");
+        RefuseFolderOrLink(target);
+        Directory.CreateDirectory(directory);
+
+        var temp = Path.Combine(directory, $"{Path.GetFileName(target)}.{Convert.ToHexString(RandomNumberGenerator.GetBytes(8))}.tmp");
+
+        // Set only after CreateNew succeeds, so a failure to create can never lead to removing a file we didn't make.
+        var created = false;
+        try
+        {
+            using (var stream = new FileStream(temp, FileMode.CreateNew, FileAccess.Write, FileShare.None))
+            {
+                created = true;
+                stream.Write(contents);
+                stream.Flush(flushToDisk: true);
+            }
+
+            File.Move(temp, target, overwrite: true);
+        }
+        catch
+        {
+            if (created)
+            {
+                RemoveTemp(temp);
+            }
+
+            throw;
+        }
+    }
+
+    private static void RefuseFolderOrLink(string target)
+    {
+        FileAttributes attributes;
+        try
+        {
+            attributes = File.GetAttributes(target);
+        }
+        catch (Exception ex) when (ex is FileNotFoundException or DirectoryNotFoundException)
+        {
+            return;
+        }
+
+        if (attributes.HasFlag(FileAttributes.Directory))
+        {
+            throw new IOException($"'{target}' is a folder, not a file. Nothing was written.");
+        }
+
+        if (attributes.HasFlag(FileAttributes.ReparsePoint))
+        {
+            throw new IOException($"'{target}' is a symbolic link or junction. KvaliTool won't write through links. Nothing was written.");
+        }
+    }
+
+    /// <summary>Best effort: a leftover temp file is harmless, and the original error is the one worth reporting.</summary>
+    private static void RemoveTemp(string temp)
+    {
+        try
+        {
+            File.Delete(temp);
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            // Nothing more we can safely do.
+        }
+    }
 }
