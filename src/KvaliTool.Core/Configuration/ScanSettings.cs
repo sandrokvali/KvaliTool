@@ -21,6 +21,13 @@ public sealed class ScanSettings
     /// <summary>Used from Phase 3 on.</summary>
     public int QuarantineRetentionDays { get; set; } = 7;
 
+    /// <summary>
+    /// Search for duplicate files. Off by default because it reads every candidate file in full (it took 8 of
+    /// 8.5 minutes on a real PC). This is the default for the "Find duplicates (slow)" switch; the UI and CLI can
+    /// turn it on for a single scan. When off, the Duplicate files category reports Skipped with a note.
+    /// </summary>
+    public bool FindDuplicates { get; set; }
+
     /// <summary>Run DISM /AnalyzeComponentStore when elevated. It is read-only but can take several minutes.</summary>
     public bool AnalyzeComponentStore { get; set; } = true;
 

@@ -39,4 +39,12 @@ public static class SettingsStore
         settings.Validate();
         return settings;
     }
+
+    /// <summary>
+    /// Validates, then saves atomically through <see cref="AppDataFile.WriteAtomic"/>: a crash mid-save leaves the
+    /// previous file intact, never a truncated one. Invalid settings throw <see cref="SettingsException"/> and
+    /// nothing is written. Callers must not save over a file that failed to <see cref="Load"/>: that would replace
+    /// the user's (broken but recoverable) exclusion list with whatever is in memory.
+    /// </summary>
+    public static void Save(ScanSettings settings, string path) => throw new NotImplementedException();
 }

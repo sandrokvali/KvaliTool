@@ -17,6 +17,12 @@ public sealed class ScanRequest
 
     /// <summary>Null scans every category.</summary>
     public IReadOnlySet<CategoryId>? Categories { get; init; }
+
+    /// <summary>
+    /// Full-file hashes remembered between scans (used only when <see cref="ScanSettings.FindDuplicates"/> is on).
+    /// Null = no cache. The engine calls <see cref="IHashCache.Save"/> after a completed scan, not after a cancelled one.
+    /// </summary>
+    public IHashCache? HashCache { get; init; }
 }
 
 /// <summary>
