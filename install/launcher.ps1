@@ -5,7 +5,8 @@
         irm <launcher url> | iex
 
     What it does:
-      1. Shows a menu. Phase 2 scans and shows results only: nothing on your PC is changed.
+      1. Opens the KvaliTool window (or, with -Action menu, shows a menu with the console scanner too).
+         Phase 2 scans and shows results only: nothing on your PC is changed.
       2. Downloads only what the chosen option needs, to %LOCALAPPDATA%\KvaliTool\bin\<version>\:
            - the window app: KvaliTool-<version>-win-x64.zip (self-contained, no .NET install needed),
              unzipped to %LOCALAPPDATA%\KvaliTool\app\<version>\;
@@ -19,8 +20,9 @@
     It never deletes anything except its own half-finished download.
 
     Options (when started with: & ([scriptblock]::Create((irm <url>))) -Action scan):
-      -Action      menu | app | app-install | scan | scan-admin | categories    (or set $env:KVALITOOL_ACTION)
-                   app-install downloads and verifies the window app without opening it.
+      -Action      app (default) | menu | app-install | scan | scan-admin | categories
+                   (or set $env:KVALITOOL_ACTION). app-install downloads and verifies the window app without
+                   opening it.
       -InstallDir  where to keep downloads (default %LOCALAPPDATA%\KvaliTool\bin; the app is unzipped
                    next to it, in ..\app)
 
@@ -50,7 +52,7 @@ param(
     }
 
     if (-not $Action) { $Action = $env:KVALITOOL_ACTION }
-    if (-not $Action) { $Action = 'menu' }
+    if (-not $Action) { $Action = 'app' }
     if (-not $InstallDir) { $InstallDir = Join-Path $env:LOCALAPPDATA 'KvaliTool\bin' }
 
     if (-not [Environment]::Is64BitOperatingSystem) { throw 'KvaliTool needs 64-bit Windows.' }
@@ -81,7 +83,19 @@ param(
         New-Item -ItemType Directory -Force -Path (Split-Path $Target -Parent) | Out-Null
         $partial = "$Target.download"
         Write-Host "Downloading KvaliTool $Version from $Url ..." -ForegroundColor Cyan
-        Invoke-WebRequest -Uri $Url -OutFile $partial -UseBasicParsing
+        # curl.exe (in Windows since 10 1803) is faster and shows a progress bar. If it is missing or fails (for
+        # example behind a proxy it doesn't know about), Invoke-WebRequest tries again with the Windows settings.
+        $downloaded = $false
+        $curl = Get-Command curl.exe -CommandType Application -ErrorAction SilentlyContinue | Select-Object -First 1
+        if ($curl) {
+            # Its progress bar goes to stderr, which Windows PowerShell 5.1 can turn into a terminating error
+            # under 'Stop' when output is redirected: only the exit code counts here.
+            $ErrorActionPreference = 'Continue'
+            & $curl.Source --fail --location --retry 2 --progress-bar --output $partial $Url
+            $downloaded = ($LASTEXITCODE -eq 0)
+            $ErrorActionPreference = 'Stop'
+        }
+        if (-not $downloaded) { Invoke-WebRequest -Uri $Url -OutFile $partial -UseBasicParsing }
         $actual = Get-Sha256 $partial
         if ($actual -ne $Sha256) {
             # Our own half-finished download, never anything of yours.
@@ -163,8 +177,21 @@ param(
 
     function Start-App {
         Get-App
-        Start-Process -FilePath $appExe -WorkingDirectory $appDir
-        Write-Host 'KvaliTool opened in its own window. It scans and shows results; this version changes nothing.'
+        $process = Start-Process -FilePath $appExe -WorkingDirectory $appDir -PassThru
+        # Say "opened" only once the window is really there, and say so if the app closes instead.
+        $clock = [Diagnostics.Stopwatch]::StartNew()
+        while ($clock.Elapsed.TotalSeconds -lt 30) {
+            $process.Refresh()
+            if ($process.HasExited) {
+                throw ('KvaliTool closed right after starting (exit code 0x{0:X8}). Please report this; it is a bug.' -f $process.ExitCode)
+            }
+            if ($process.MainWindowHandle -ne [IntPtr]::Zero) {
+                Write-Host 'KvaliTool opened in its own window. It scans and shows results; this version changes nothing.'
+                return
+            }
+            Start-Sleep -Milliseconds 50
+        }
+        Write-Host 'KvaliTool was started but its window has not appeared yet.' -ForegroundColor Yellow
     }
 
     function Start-Scan {
@@ -192,13 +219,13 @@ param(
     }
 
     switch ($Action) {
-        'app' { Start-App; return }
+        'app' { Start-App; Write-Host "For the console scanner: `$env:KVALITOOL_ACTION = 'menu', then run the same line again."; return }
         'app-install' { Get-App; Write-Host "Installed and verified, not opened: $appExe"; return }
         'scan' { Start-Scan; return }
         'scan-admin' { Start-AdminScan; return }
         'categories' { Get-Cli; & $exe categories; return }
         'menu' { }
-        default { throw "Unknown action '$Action'. Use menu, app, app-install, scan, scan-admin or categories." }
+        default { throw "Unknown action '$Action'. Use app, menu, app-install, scan, scan-admin or categories." }
     }
 
     while ($true) {

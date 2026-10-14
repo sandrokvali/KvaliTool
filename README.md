@@ -15,14 +15,15 @@ A Windows disk cleaner built for safety and transparency: scan → show exactly 
 irm https://github.com/sandrokvali/KvaliTool/releases/latest/download/kvalitool.ps1 | iex
 ```
 
-The launcher shows a menu and downloads only what the option you pick needs, into `%LOCALAPPDATA%\KvaliTool`:
+It opens the KvaliTool window. The first time it downloads the app (a ~31 MB zip, self-contained, no .NET or Windows App SDK install needed) into `%LOCALAPPDATA%\KvaliTool`; after that the window opens in about a second. The launcher checks the zip's SHA-256 against the hash pinned inside the launcher, unzips it, and on **every** start checks every unzipped file against the list inside that verified zip. A changed, missing or extra file (for example a planted DLL) means it refuses to start. It only says the window opened once the window is really there.
 
-- **1 Open KvaliTool (window)**: a self-contained WinUI 3 app (zip, no .NET or Windows App SDK install needed). The launcher checks the zip's SHA-256 against the hash pinned inside the launcher, unzips it, and on **every** start checks every unzipped file against the list inside that verified zip. A changed, missing or extra file (for example a planted DLL) means it refuses to start.
-- **2–4**: the console scanner from Phase 1 (`kvalitool.exe`, single file, also hash-pinned).
+The console scanner from Phase 1 (`kvalitool.exe`, single file, also hash-pinned) is in the menu: `$env:KVALITOOL_ACTION = 'menu'`, then the same line.
 
 It never elevates by itself; only the "system locations" scan asks for administrator rights. It never deletes anything except its own half-finished download.
 
-Skip the menu: `$env:KVALITOOL_ACTION = 'app'; irm <url> | iex` (also `app-install`, `scan`, `scan-admin`, `categories`).
+Other actions: `$env:KVALITOOL_ACTION = 'menu'; irm <url> | iex` (also `app-install`, `scan`, `scan-admin`, `categories`; the default is `app`).
+
+0.2.0 and 0.2.1 window apps crashed at start: `dotnet publish` left `KvaliTool.pri` (the compiled XAML) out of the zip. Fixed in 0.2.2, which is also a third of the size (trimmed, and without the Windows App SDK's unused AI/ML runtimes).
 
 ## Build and test it
 

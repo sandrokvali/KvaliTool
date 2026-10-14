@@ -9,7 +9,8 @@
       - the literal "irm ... | iex" line works in Windows PowerShell 5.1 and in PowerShell 7;
       - the downloaded exe is verified and actually runs (categories + a real read-only scan);
       - the full Phase 1 sandbox safety test passes against the published (trimmed) exe;
-      - the window app zip is downloaded, verified, unzipped, re-verified on the next start, and opens;
+      - the window app zip is downloaded, verified, unzipped, re-verified on the next start, and its window
+        opens (also from the plain one-liner, with no action set);
       - a tampered download (exe or zip) is rejected and nothing runs;
       - a tampered cached exe or zip is refused and left alone (not deleted, not run);
       - a modified, or an extra (planted), file in the unzipped app is refused and left alone.
@@ -143,12 +144,18 @@ try {
         Check ($again.Exit -eq 0 -and $again.Output -match 'already downloaded' -and $again.Output -match 'window app \(verified\)') "${shell}: second start re-verifies the zip and every unzipped file"
     }
 
-    $lad = Join-Path $work 'app-pwsh'
-    $r = Invoke-OneLiner 'pwsh.exe' $good $lad 'app'
-    Start-Sleep -Seconds 4
-    $running = Get-AppProcess (Join-Path $lad 'KvaliTool\app')
-    Check ($r.Exit -eq 0 -and $running.Count -ge 1 -and -not $running[0].HasExited) "'app' opens the verified KvaliTool window (process running from the unzipped folder)"
-    $running | Stop-Process -Force
+    # A running process is not enough: a published app that crashes at start (as 0.2.0 and 0.2.1 did, with no
+    # KvaliTool.pri in the zip) stays alive for seconds while Windows writes the crash report. Require the window.
+    foreach ($case in @(@{ Shell = 'pwsh.exe'; Action = 'app'; What = "'app'" }, @{ Shell = 'powershell.exe'; Action = ''; What = 'The plain one-liner (no action set)' })) {
+        $lad = Join-Path $work "app-$($case.Shell.Replace('.exe',''))"
+        $r = Invoke-OneLiner $case.Shell $good $lad $case.Action
+        Start-Sleep -Seconds 3
+        $running = Get-AppProcess (Join-Path $lad 'KvaliTool\app')
+        $window = @($running | Where-Object { $_.MainWindowHandle -ne [IntPtr]::Zero -and $_.MainWindowTitle -eq 'KvaliTool' })
+        Check ($r.Exit -eq 0 -and $r.Output -match 'opened in its own window' -and $window.Count -ge 1) "$($case.What) opens the verified KvaliTool window, still open 3 s later ($($case.Shell))"
+        if ($r.Exit -ne 0) { $r.Output | Out-Host }
+        $running | Stop-Process -Force
+    }
 
     $lad = Join-Path $work 'app-tampered-download'
     $r = Invoke-OneLiner 'powershell.exe' $bad $lad 'app-install'

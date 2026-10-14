@@ -4,6 +4,8 @@
     <RootNamespace>KvaliTool.Core</RootNamespace>
     <!-- Needed by the LibraryImport source generator for the Win32 calls in Platform/NativeMethods.cs. -->
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <!-- Both the console scanner and the window app are published trimmed: keep this library trim-safe. -->
+    <IsTrimmable>true</IsTrimmable>
   </PropertyGroup>
 
   <ItemGroup>
