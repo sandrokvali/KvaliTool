@@ -24,10 +24,10 @@ public sealed record CategoryResult
 
 public sealed record ScanReport
 {
-    /// <summary>Always "DryRun" in Phase 1: the engine has no code that changes anything.</summary>
+    /// <summary>Always "DryRun" in Phases 1 and 2: the engine has no code that changes anything.</summary>
     public string Mode { get; init; } = "DryRun";
 
-    public string EngineVersion { get; init; } = "0.1.0-phase1";
+    public string EngineVersion { get; init; } = "0.2.0-phase2";
 
     public required DateTime StartedUtc { get; init; }
 
