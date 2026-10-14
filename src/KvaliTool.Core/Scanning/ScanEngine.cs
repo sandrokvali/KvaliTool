@@ -62,6 +62,7 @@ public sealed class ScanEngine(IReadOnlyList<ICategoryScanner> scanners)
             NowUtc = started,
             Progress = tracker,
             CancellationToken = cancellationToken,
+            HashCache = request.Settings.FindDuplicates ? request.HashCache : null,
         };
 
         var results = new Dictionary<CategoryId, CategoryResultBuilder>();
@@ -104,6 +105,10 @@ public sealed class ScanEngine(IReadOnlyList<ICategoryScanner> scanners)
 
         progress?.Report(tracker.Snapshot());
 
+        // Only reached when the scan completed (a cancelled scan throws above), so a half-finished scan never
+        // writes the cache.
+        SaveHashCache(context.HashCache, results);
+
         var ordered = CategoryCatalog.All
             .Where(d => results.ContainsKey(d.Id))
             .Select(d => results[d.Id])
@@ -121,6 +126,27 @@ public sealed class ScanEngine(IReadOnlyList<ICategoryScanner> scanners)
             Categories = ordered.Select(b => b.Build(durations.GetValueOrDefault(b.Definition.Id))).ToList(),
             PolicyViolations = ordered.SelectMany(b => b.Violations).ToList(),
         };
+    }
+
+    /// <summary>Losing the cache only costs time, so a failed save is noted on the duplicate category, not raised.</summary>
+    private static void SaveHashCache(IHashCache? cache, Dictionary<CategoryId, CategoryResultBuilder> results)
+    {
+        if (cache is null)
+        {
+            return;
+        }
+
+        try
+        {
+            cache.Save();
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            if (results.TryGetValue(CategoryId.DuplicateFiles, out var builder))
+            {
+                builder.Note($"Couldn't save the hash cache ({ex.Message}). The next duplicate search will be slower.");
+            }
+        }
     }
 
     private static async Task RunOneAsync(ICategoryScanner scanner, ScanContext context, CategoryResultBuilder builder, CancellationToken token)

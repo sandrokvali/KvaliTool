@@ -24,6 +24,7 @@ internal static partial class NativeMethods
     internal const int ERROR_SHARING_VIOLATION = 32;
     internal const int ERROR_LOCK_VIOLATION = 33;
 
+    internal const int FileBasicInfoClass = 0;
     internal const int FileAttributeTagInfoClass = 9;
 
     [LibraryImport("kernel32.dll", EntryPoint = "CreateFileW", SetLastError = true, StringMarshalling = StringMarshalling.Utf16)]
@@ -47,6 +48,10 @@ internal static partial class NativeMethods
     [return: MarshalAs(UnmanagedType.Bool)]
     internal static partial bool GetFileInformationByHandleEx(SafeFileHandle file, int infoClass, out FileAttributeTagInfo info, uint size);
 
+    [LibraryImport("kernel32.dll", EntryPoint = "GetFileInformationByHandleEx", SetLastError = true)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    internal static partial bool GetFileInformationByHandleEx(SafeFileHandle file, int infoClass, out FileBasicInfo info, uint size);
+
     [LibraryImport("shell32.dll")]
     internal static partial int SHGetKnownFolderPath(in Guid folderId, uint flags, nint token, out nint path);
 
@@ -69,6 +74,17 @@ internal static partial class NativeMethods
         public uint NumberOfLinks;
         public uint FileIndexHigh;
         public uint FileIndexLow;
+    }
+
+    /// <summary>FILE_BASIC_INFO: four 64-bit FILETIME values, then the attributes (40 bytes with padding).</summary>
+    [StructLayout(LayoutKind.Sequential)]
+    internal struct FileBasicInfo
+    {
+        public long CreationTime;
+        public long LastAccessTime;
+        public long LastWriteTime;
+        public long ChangeTime;
+        public uint FileAttributes;
     }
 
     [StructLayout(LayoutKind.Sequential)]

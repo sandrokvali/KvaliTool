@@ -53,6 +53,11 @@ static int Help()
         One-off threshold overrides:
           --temp-hours <n>  --downloads-days <n>  --log-days <n>  --large-mb <n>  --dup-min-kb <n>  --skip-dism
 
+        Duplicate files (off by default because it reads every candidate file in full):
+          --find-duplicates            Search for duplicate files in this run (same as "Find duplicates (slow)")
+          --no-hash-cache              Don't use or update the remembered file hashes in %LOCALAPPDATA%\KvaliTool\hashcache.bin.
+                                       Rescans skip files unchanged since last time. --sandbox scans never use it.
+
         Press Ctrl+C to cancel a scan.
         """);
     return 0;
@@ -90,6 +95,11 @@ static async Task<int> ScanAsync(CliOptions options)
     options.ApplyOverrides(settings);
     settings.Validate();
 
+    // The remembered hashes belong to the real machine, so a sandbox scan never reads or writes them.
+    var hashCache = options.Sandbox is null && !options.NoHashCache && settings.FindDuplicates
+        ? FileHashCache.Load(FileHashCache.DefaultPath)
+        : null;
+
     var reportPath = options.JsonPath ?? Path.Combine(
         Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "KvaliTool", "reports", $"scan-{DateTime.Now:yyyyMMdd-HHmmss}.json");
     if (File.Exists(reportPath))
@@ -113,7 +123,7 @@ static async Task<int> ScanAsync(CliOptions options)
     try
     {
         report = await ScanEngine.CreateDefault().ScanAsync(
-            new ScanRequest { Settings = settings, Paths = paths, Processes = processes, Categories = options.Only },
+            new ScanRequest { Settings = settings, Paths = paths, Processes = processes, Categories = options.Only, HashCache = hashCache },
             progress,
             cancel.Token);
     }
@@ -173,6 +183,10 @@ namespace KvaliTool.Cli
 
         private bool SkipDism { get; set; }
 
+        private bool FindDuplicates { get; set; }
+
+        public bool NoHashCache { get; private set; }
+
         public static CliOptions Parse(string[] args)
         {
             var o = new CliOptions();
@@ -198,6 +212,8 @@ namespace KvaliTool.Cli
                     case "--large-mb": o.LargeMb = Int(); break;
                     case "--dup-min-kb": o.DupMinKb = Int(); break;
                     case "--skip-dism": o.SkipDism = true; break;
+                    case "--find-duplicates": o.FindDuplicates = true; break;
+                    case "--no-hash-cache": o.NoHashCache = true; break;
                     default: throw new UsageException($"Unknown option '{args[i]}'.");
                 }
             }
@@ -218,6 +234,7 @@ namespace KvaliTool.Cli
             if (LargeMb is { } m) s.LargeFileThresholdBytes = m * ScanSettings.OneMiB;
             if (DupMinKb is { } k) s.DuplicateMinBytes = k * 1024;
             if (SkipDism) s.AnalyzeComponentStore = false;
+            if (FindDuplicates) s.FindDuplicates = true;
         }
 
         private static CategoryId ParseCategory(string text) =>

@@ -46,5 +46,10 @@ public static class SettingsStore
     /// nothing is written. Callers must not save over a file that failed to <see cref="Load"/>: that would replace
     /// the user's (broken but recoverable) exclusion list with whatever is in memory.
     /// </summary>
-    public static void Save(ScanSettings settings, string path) => throw new NotImplementedException();
+    public static void Save(ScanSettings settings, string path)
+    {
+        settings.Validate();
+        var json = JsonSerializer.SerializeToUtf8Bytes(settings, KvaliJsonContext.Default.ScanSettings);
+        AppDataFile.WriteAtomic(path, json);
+    }
 }

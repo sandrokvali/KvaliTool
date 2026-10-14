@@ -22,7 +22,7 @@ Skip the menu: `$env:KVALITOOL_ACTION = 'scan'; irm <url> | iex` (also `scan-adm
 ## Test it
 
 ```powershell
-pwsh -File .\tools\Test-Phase1.ps1      # sandbox: proves the scan changes nothing (32 checks)
+pwsh -File .\tools\Test-Phase1.ps1      # sandbox: proves the scan changes nothing (34 checks)
 pwsh -File .\tools\Test-Launcher.ps1    # the irm | iex flow end to end on localhost (12 checks)
 ```
 

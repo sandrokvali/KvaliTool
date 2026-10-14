@@ -27,6 +27,7 @@ $work = Join-Path $repo "artifacts\phase1-test\$(Get-Date -Format 'yyyyMMdd-HHmm
 $sb = Join-Path $work 'sandbox'
 $outside = Join-Path $work 'outside-target'
 $report = Join-Path $work 'report.json'
+$reportNoDup = Join-Path $work 'report-no-duplicates.json'
 
 $script:failures = 0
 function Check([bool]$condition, [string]$what) {
@@ -158,8 +159,13 @@ $before = Get-Snapshot
 $lock = [IO.File]::Open("$temp\locked.tmp", 'Open', 'ReadWrite', 'None')
 try {
     Write-Host "Scanning sandbox (Edge pretended to be running)..." -ForegroundColor Cyan
-    & $runCli scan --sandbox $sb --json $report --large-mb 1 --top 0 --pretend-running msedge | Out-Host
+    & $runCli scan --sandbox $sb --json $report --large-mb 1 --top 0 --pretend-running msedge --find-duplicates | Out-Host
     $exit = $LASTEXITCODE
+
+    # Same sandbox without --find-duplicates: the duplicate search must stay off by default.
+    Write-Host "Scanning sandbox again without --find-duplicates..." -ForegroundColor Cyan
+    & $runCli scan --sandbox $sb --json $reportNoDup --large-mb 1 --top 0 --pretend-running msedge --only DuplicateFiles | Out-Host
+    $exitNoDup = $LASTEXITCODE
 }
 finally {
     $lock.Dispose()
@@ -171,6 +177,9 @@ $diff = Compare-Object $before $after
 
 Write-Host "`nResults" -ForegroundColor Cyan
 Check ($exit -eq 0) "CLI exit code is 0 (got $exit)"
+Check ($exitNoDup -eq 0) "CLI exit code is 0 without --find-duplicates (got $exitNoDup)"
+$noDup = (Get-Content $reportNoDup -Raw | ConvertFrom-Json).categories | Where-Object { $_.definition.id -eq 'DuplicateFiles' }
+Check ($noDup.status -eq 'Skipped' -and @($noDup.items).Count -eq 0 -and ($noDup.notes -join ' ') -like '*Duplicate search is off*') "Without --find-duplicates, Duplicate files is Skipped with no items and a note saying it's off"
 Check ($null -eq $diff) "Nothing in the sandbox or the outside folder changed ($($before.Count) entries compared: size, times, SHA-256)"
 if ($diff) { $diff | Format-Table -AutoSize | Out-Host }
 

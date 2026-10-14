@@ -1,0 +1,12 @@
+<Project Sdk="MSTest.Sdk/4.5.1">
+
+  <PropertyGroup>
+    <RootNamespace>KvaliTool.Tests</RootNamespace>
+    <AssemblyName>KvaliTool.Tests</AssemblyName>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\KvaliTool.Core\KvaliTool.Core.csproj" />
+  </ItemGroup>
+
+</Project>
