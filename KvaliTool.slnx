@@ -3,4 +3,7 @@
     <Project Path="src/KvaliTool.Cli/KvaliTool.Cli.csproj" />
     <Project Path="src/KvaliTool.Core/KvaliTool.Core.csproj" />
   </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/KvaliTool.Tests/KvaliTool.Tests.csproj" />
+  </Folder>
 </Solution>
