@@ -61,7 +61,7 @@ public static class FileSystemInfoNative
             return null;
         }
 
-        return GetFileInformationByHandleEx(handle, FileAttributeTagInfoClass, out var info, (uint)Marshal.SizeOf<FileAttributeTagInfo>())
+        return GetFileInformationByHandleEx(handle, FileAttributeTagInfoClass, out FileAttributeTagInfo info, (uint)Marshal.SizeOf<FileAttributeTagInfo>())
             ? info.ReparseTag
             : null;
     }
@@ -84,6 +84,27 @@ public static class FileSystemInfoNative
 
         identity = $"{info.VolumeSerialNumber:X8}-{info.FileIndexHigh:X8}{info.FileIndexLow:X8}";
         linkCount = info.NumberOfLinks;
+        return true;
+    }
+
+    /// <summary>
+    /// Last-write time and NTFS change time of an open file. The change time moves whenever the file's data or
+    /// metadata is written, even if a tool sets the last-write time back afterwards, so together they tell
+    /// "same content as last time" far more reliably than the modified time alone. Read-only query.
+    /// </summary>
+    public static bool TryGetFileTimes(SafeFileHandle handle, out DateTime lastWriteUtc, out DateTime changeTimeUtc)
+    {
+        lastWriteUtc = default;
+        changeTimeUtc = default;
+        if (!GetFileInformationByHandleEx(handle, FileBasicInfoClass, out FileBasicInfo info, (uint)Marshal.SizeOf<FileBasicInfo>())
+            || info.LastWriteTime <= 0
+            || info.ChangeTime <= 0)
+        {
+            return false;
+        }
+
+        lastWriteUtc = DateTime.FromFileTimeUtc(info.LastWriteTime);
+        changeTimeUtc = DateTime.FromFileTimeUtc(info.ChangeTime);
         return true;
     }
 }

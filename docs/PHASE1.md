@@ -8,7 +8,7 @@ Status: complete, waiting for your review. **This build contains no code that de
 |---|---|
 | `KvaliTool.Core` | Class library holding the scan engine. The WinUI app (Phase 2) and the cleaner (Phase 3) will use the same library. |
 | `KvaliTool.Cli` | `kvalitool scan`: runs the engine and prints what it found and why. It writes a JSON report to a **new** file (never overwrites). |
-| `tools/Test-Phase1.ps1` | Builds a fake Windows tree full of traps, snapshots it, scans, snapshots again and checks 32 expectations. |
+| `tools/Test-Phase1.ps1` | Builds a fake Windows tree full of traps, snapshots it, scans, snapshots again and checks 34 expectations. |
 
 How a scan works:
 

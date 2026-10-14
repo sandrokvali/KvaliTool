@@ -27,6 +27,9 @@ public sealed class ScanContext
 
     public required CancellationToken CancellationToken { get; init; }
 
+    /// <summary>Remembered full-file hashes for the duplicate finder; null = none. The engine saves it after a completed scan.</summary>
+    public IHashCache? HashCache { get; init; }
+
     /// <summary>Sandbox folders belong to you, so "admin-only" categories can be exercised there without elevation.</summary>
     public bool HasAdminAccess => IsElevated || Paths.IsSandbox;
 
