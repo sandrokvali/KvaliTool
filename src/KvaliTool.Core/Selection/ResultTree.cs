@@ -131,7 +131,8 @@ public readonly record struct SelectionOutcome(int Changed, int KeptForDuplicate
 
 /// <summary>
 /// The results of a scan as a flat list of category &gt; group &gt; item rows with tri-state checkboxes.
-/// UI-agnostic and single-threaded: call it from one thread (the UI thread).
+/// UI-agnostic and single-threaded. <see cref="Build"/> may run on a background thread; after that, use the tree
+/// from one thread only (the UI thread).
 ///
 /// Selection rules (enforced here, not in the UI):
 /// <list type="bullet">
